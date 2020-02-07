@@ -7,7 +7,9 @@ const port = 3001;
 const API_URL = "https://api.github.com";
 
 const config = {
-  headers: { "User-Agent": "request" },
+  headers: {
+    Authorization: process.env.GITHUB_TOKEN,
+  },
 };
 
 app.all("*", (_, res, next) => {
@@ -51,6 +53,32 @@ app.get("/repository/:user/:repo", (req, res, next) => {
         next();
       })
     )
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send({ status: false, data: err.message });
+      next();
+    });
+});
+
+/* github api authentication */
+app.get("/callback", (req, res, next) => {
+  const { query } = req;
+  const { code } = query;
+
+  if (!code) {
+    res.status(200).send({ status: false, data: "No code" });
+  }
+
+  axios
+    .post("https://github.com/login/oauth/access_token", {
+      client_id: process.env.CLIENT_ID,
+      client_secret: process.env.CLIENT_SECRET,
+      code: code,
+    })
+    .then((response) => {
+      res.status(200).send({ status: true, data: response.data });
+      next();
+    })
     .catch((err) => {
       console.log(err);
       res.status(500).send({ status: false, data: err.message });
