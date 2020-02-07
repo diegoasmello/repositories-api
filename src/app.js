@@ -42,13 +42,46 @@ app.get("/repository/:user/:repo", (req, res, next) => {
         config
       ),
       axios.get(`${API_URL}/users/${req.params.user}/repos`, config),
+      axios.get(
+        `${API_URL}/repos/${req.params.user}/${req.params.repo}/issues`,
+        config
+      ),
+      axios.get(
+        `${API_URL}/repos/${req.params.user}/${req.params.repo}/commits`,
+        config
+      ),
+      axios.get(
+        `${API_URL}/repos/${req.params.user}/${req.params.repo}/branches`,
+        config
+      ),
     ])
     .then(
-      axios.spread((res1, res2) => {
+      axios.spread((res1, res2, res3, res4, res5) => {
+        let countPullRequest = 0;
+
+        for (let i = 0; i < res3.data.length; i++) {
+          if (res3.data[i].pull_request) {
+            countPullRequest++;
+          }
+        }
+
+        let repository = res1.data;
+
+        repository.issues =
+          res3.data.length - countPullRequest == 30
+            ? "> 30"
+            : res3.data.length - countPullRequest;
+        repository.pull_request =
+          countPullRequest == 30 ? "> 30" : countPullRequest;
+        repository.branches =
+          res5.data.length == 30 ? "> 30" : res5.data.length;
+        repository.commits = res4.data.length == 30 ? "> 30" : res4.data.length;
+
         const data = {
-          respository: res1.data,
+          respository: repository,
           repositoriesFromAuthor: res2.data,
         };
+
         res.status(200).send({ status: true, data: data });
         next();
       })
