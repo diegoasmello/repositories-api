@@ -2,7 +2,7 @@ const express = require("express");
 const axios = require("axios");
 
 const app = express();
-const port = 3001;
+const port = process.env.PORT || 3001;
 
 const API_URL = "https://api.github.com";
 
