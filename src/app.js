@@ -1,10 +1,14 @@
 const express = require("express");
-const request = require("request");
+const axios = require("axios");
 
 const app = express();
 const port = 3001;
 
 const API_URL = "https://api.github.com";
+
+const config = {
+  headers: { "User-Agent": "request" },
+};
 
 app.all("*", (_, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -16,45 +20,42 @@ app.all("*", (_, res, next) => {
 });
 
 app.get("/search/:term", (req, res, next) => {
-  const options = {
-    url: `${API_URL}/search/repositories?q=${req.params.term}`,
-    headers: {
-      "User-Agent": "request",
-    },
-  };
-
-  request.get(options, (error, response, body) => {
-    if (!error && response.statusCode == 200) {
-      res.status(200).send({ status: true, data: JSON.parse(body) });
+  axios
+    .get(`${API_URL}/search/repositories?q=${req.params.term}`, config)
+    .then((response) => {
+      res.status(200).send({ status: true, data: response.data });
       next();
-    } else {
-      res.status(200).send({ status: false, data: "" });
+    })
+    .catch((err) => {
+      res.status(500).send({ status: false, data: err.message });
       next();
-    }
-  });
+    });
 });
 
 app.get("/repository/:user/:repo", (req, res, next) => {
-  try {
-    const options = {
-      url: `${API_URL}/users/${req.params.user}/repos`,
-      headers: {
-        "User-Agent": "request",
-      },
-    };
-
-    request.get(options, (error, response, body) => {
-      if (error && response.statusCode != 200) {
-        return;
-      }
-
-      res.status(200).send({ status: true, data: JSON.parse(body) });
+  axios
+    .all([
+      axios.get(
+        `${API_URL}/repos/${req.params.user}/${req.params.repo}`,
+        config
+      ),
+      axios.get(`${API_URL}/users/${req.params.user}/repos`, config),
+    ])
+    .then(
+      axios.spread((res1, res2) => {
+        const data = {
+          respository: res1.data,
+          repositoriesFromAuthor: res2.data,
+        };
+        res.status(200).send({ status: true, data: data });
+        next();
+      })
+    )
+    .catch((err) => {
+      console.log(err);
+      res.status(500).send({ status: false, data: err.message });
       next();
     });
-  } catch (e) {
-    res.status(500).send({ status: false, data: e.message });
-    next();
-  }
 });
 
 app.listen(port, (err) => {
