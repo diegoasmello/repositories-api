@@ -2,9 +2,18 @@
 
 A simple API build with Express.js for searching repositories in Github API.
 
-### Run
+### Setup
 
-`npm install`<br />
+Install dependencies
+
+`npm install`
+
+Copy env files and set environment variables
+
+`cp .env.example .env`
+
+Start the dev server
+
 `npm start`
 
 Backend will run on the port `3001`. Open [http://localhost:3001](http://localhost:3001) to view in your browser.
